@@ -74,13 +74,14 @@ async function fillTemplate() {
 
   const html = await loadTemplate(templatePath);
   const renderedHtml = await renderTemplate(html);
-  await saveIndex(renderedHtml);
+  await makeIndex(renderedHtml);
 
   async function loadTemplate(filename){
     return loadFile(filename);
   }
 
   async function loadComponent(name){
+    name = name.trim();
     return loadFile(path.join(componentsPath,`${name}.html`));
   }
 
@@ -98,12 +99,12 @@ async function fillTemplate() {
   async function renderTemplate(html){
     const result = [];
     html = html.split('\n');
-    const pattern = /({{([a-zA-Z -]+)}})/;
+    const pattern = /({{(?<component>[a-zA-Z -]+)}})/;
     for (let line of html){
       if (line.match(pattern)){
-        const componentName = line.match(pattern)[2];
+        const componentName = line.match(pattern).groups.component;
         const component = await loadComponent(componentName);
-        result.push(component);
+        result.push(line.replace(pattern, component));
       }
       else {
         result.push(line);
@@ -112,7 +113,7 @@ async function fillTemplate() {
     return result.join('\n');
   }
 
-  async function saveIndex(html){
+  async function makeIndex(html){
     return new Promise(resolve => {
       const indexPath = path.join(projectDist,'index.html');
       const ws = fs.createWriteStream(indexPath);
